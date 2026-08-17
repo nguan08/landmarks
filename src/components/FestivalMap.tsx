@@ -12,6 +12,8 @@ import {
   readLocalPointDraft,
   savePointDraft,
   clearPointDraft,
+  shouldUseLocalDraft,
+  pickMapList,
 } from '@/data/publishedMap';
 import { 
   Map, 
@@ -45,8 +47,8 @@ import {
 export function FestivalMap() {
   const { isAdmin, openLoginModal } = useAdminAuth();
 
-  const [points, setPoints] = useState<FestivalPoint[]>(DEFAULT_FESTIVAL_POINTS);
-  const [selectedPoint, setSelectedPoint] = useState<FestivalPoint | null>(DEFAULT_FESTIVAL_POINTS[0] || null);
+  const [points, setPoints] = useState<FestivalPoint[]>(() => readLocalPointDraft() || DEFAULT_FESTIVAL_POINTS);
+  const [selectedPoint, setSelectedPoint] = useState<FestivalPoint | null>(() => (readLocalPointDraft() || DEFAULT_FESTIVAL_POINTS)[0] || null);
   const [copied, setCopied] = useState<boolean>(false);
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
   const [saveHint, setSaveHint] = useState<string>('');
@@ -74,11 +76,11 @@ export function FestivalMap() {
     let cancelled = false;
     (async () => {
       const published = await fetchPublishedPoints();
-      const draft = isAdmin ? readLocalPointDraft() : null;
-      const next = draft && draft.length > 0 ? draft : published;
+      const draft = readLocalPointDraft();
+      const next = pickMapList(published, draft, isAdmin || shouldUseLocalDraft());
       if (cancelled) return;
       setPoints(next);
-      setSelectedPoint(next[0] || null);
+      setSelectedPoint((prev) => next.find((p) => p.id === prev?.id) || next[0] || null);
     })();
     return () => {
       cancelled = true;
@@ -288,7 +290,7 @@ export function FestivalMap() {
 
           {isAdmin && (
             <div className="px-3.5 py-2 bg-amber-500/10 border-b border-amber-400/20 text-[11px] font-mono-code text-amber-200 flex items-center justify-between gap-2">
-              <span>โหมดแก้ไข: ลากหมุดบนแผนที่เพื่อย้ายตำแหน่ง หรือกดแก้ไขรายละเอียดแล้วบันทึก</span>
+              <span>โหมดแก้ไข: ลากหมุดบนแผนที่เพื่อย้ายตำแหน่ง หรือกดแก้ไขรายละเอียดแล้วบันทึก • แสดง {points.length} จุดจากเครื่องนี้</span>
               {saveHint && <span className="text-emerald-300 shrink-0">{saveHint}</span>}
             </div>
           )}

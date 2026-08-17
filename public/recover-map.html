@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>กู้จุด pin จากเบราว์เซอร์นี้</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; background: #09090b; color: #fafafa; margin: 0; padding: 24px; }
+    main { max-width: 880px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; }
+    .card { background: #18181b; border: 1px solid #3f3f46; border-radius: 16px; padding: 16px 18px; margin: 14px 0; }
+    button { background: #34d399; color: #052e16; border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 800; cursor: pointer; }
+    button.secondary { background: #27272a; color: #fafafa; margin-left: 8px; }
+    pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; color: #d4d4d8; }
+    .ok { color: #6ee7b7; }
+    .warn { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>กู้จุด pin / ชื่อห้องจากเบราว์เซอร์นี้</h1>
+    <p>หน้านี้จะอ่านข้อมูลที่เซฟไว้ในเครื่องนี้เท่านั้น แล้วเขียนลงโปรเจกต์บน localhost</p>
+    <div class="card">
+      <div id="origin"></div>
+      <div id="summary" class="warn">กำลังอ่านข้อมูล...</div>
+      <p>
+        <button id="publish">บันทึกลงโปรเจกต์เลย</button>
+        <button id="copy" class="secondary">คัดลอก JSON</button>
+      </p>
+      <div id="status"></div>
+    </div>
+    <div class="card">
+      <pre id="preview"></pre>
+    </div>
+  </main>
+  <script>
+    const POINT_KEYS = ['thani_points_draft_v3', 'buriram_festival_points_v1', 'buriram_festival_points', 'buriram_festival_points_v2'];
+    const ZONE_KEYS = ['thani_zones_draft_v3', 'thani_building_zones_v1'];
+
+    function readFirst(keys) {
+      for (const key of keys) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        try {
+          const parsed = JSON.parse(raw);
+          const list = Array.isArray(parsed) ? parsed : (parsed.points || parsed.zones);
+          if (Array.isArray(list) && list.length) return { key, list };
+        } catch {}
+      }
+      return { key: null, list: [] };
+    }
+
+    const points = readFirst(POINT_KEYS);
+    const zones = readFirst(ZONE_KEYS);
+    const payload = {
+      points: points.list,
+      zones: zones.list,
+      updatedAt: new Date().toISOString(),
+      origin: location.origin,
+    };
+
+    document.getElementById('origin').textContent = 'กำลังเปิดจาก: ' + location.origin;
+    document.getElementById('summary').innerHTML =
+      'พิน ' + points.list.length + ' จุด (key: ' + (points.key || 'ไม่พบ') + ')<br>' +
+      'ห้อง ' + zones.list.length + ' ห้อง (key: ' + (zones.key || 'ไม่พบ') + ')' +
+      (points.list.length || zones.list.length ? '' : '<br>ไม่เจอข้อมูลในที่นี้ ลองเปิดอีกอัน: http://localhost:5173/recover-map.html หรือ http://127.0.0.1:5173/recover-map.html');
+    document.getElementById('preview').textContent =
+      (points.list.map((p) => '- ' + (p.nameTh || p.name)).join('\n') || '(ไม่มีพิน)') +
+      '\n\n' +
+      (zones.list.map((z) => '- ' + (z.name || z.nameTh)).join('\n') || '(ไม่มีห้อง)');
+
+    document.getElementById('copy').onclick = async () => {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      document.getElementById('status').textContent = 'คัดลอกแล้ว';
+    };
+
+    document.getElementById('publish').onclick = async () => {
+      const status = document.getElementById('status');
+      if (!payload.points.length && !payload.zones.length) {
+        status.textContent = 'ไม่มีข้อมูลให้บันทึกในเบราว์เซอร์นี้';
+        return;
+      }
+      try {
+        const res = await fetch('/__publish-map-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        status.innerHTML = res.ok
+          ? '<span class="ok">บันทึกลงโปรเจกต์แล้ว กลับไปบอกในแชทว่า เผยแพร่แล้ว</span>'
+          : 'บันทึกไม่สำเร็จ: ' + (await res.text());
+      } catch (err) {
+        status.textContent = 'บันทึกไม่สำเร็จ ต้องเปิดผ่าน localhost ของโปรเจกต์นี้';
+      }
+    };
+  </script>
+</body>
+</html>

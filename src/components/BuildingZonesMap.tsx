@@ -7,6 +7,8 @@ import {
   readLocalZoneDraft,
   saveZoneDraft,
   clearZoneDraft,
+  shouldUseLocalDraft,
+  pickMapList,
 } from '@/data/publishedMap';
 import { 
   Sparkles, 
@@ -240,8 +242,15 @@ function persistBuildingZones(zones: ExhibitionZone[]): boolean {
 export function BuildingZonesMap() {
   const { isAdmin, openLoginModal } = useAdminAuth();
 
-  const [zones, setZones] = useState<ExhibitionZone[]>(DEFAULT_BUILDING_ZONES);
-  const [activeZone, setActiveZone] = useState<ExhibitionZone>(DEFAULT_BUILDING_ZONES[2] || DEFAULT_BUILDING_ZONES[0]);
+  const [zones, setZones] = useState<ExhibitionZone[]>(() => {
+    const draft = readLocalZoneDraft();
+    return (draft && draft.length > 0 ? draft : DEFAULT_BUILDING_ZONES).map(hydrateZone);
+  });
+  const [activeZone, setActiveZone] = useState<ExhibitionZone>(() => {
+    const draft = readLocalZoneDraft();
+    const next = (draft && draft.length > 0 ? draft : DEFAULT_BUILDING_ZONES).map(hydrateZone);
+    return next[2] || next[0];
+  });
   const [hoveredZone, setHoveredZone] = useState<ExhibitionZone | null>(null);
   const [saveHint, setSaveHint] = useState<string>('');
   const [isPlacing, setIsPlacing] = useState<boolean>(false);
@@ -270,8 +279,8 @@ export function BuildingZonesMap() {
     (async () => {
       const publishedRaw = await fetchPublishedZones();
       const published = (publishedRaw || DEFAULT_BUILDING_ZONES).map(hydrateZone);
-      const draft = isAdmin ? readLocalZoneDraft() : null;
-      const next = draft && draft.length > 0 ? draft.map(hydrateZone) : published;
+      const draft = readLocalZoneDraft();
+      const next = pickMapList(published, draft, isAdmin || shouldUseLocalDraft()).map(hydrateZone);
       if (cancelled) return;
       setZones(next);
       setActiveZone(next[2] || next[0]);

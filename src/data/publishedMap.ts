@@ -25,6 +25,15 @@ export function readLocalPointDraft(): FestivalPoint[] | null {
   return null;
 }
 
+export function shouldUseLocalDraft(): boolean {
+  return import.meta.env.DEV || (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname));
+}
+
+export function pickMapList<T>(published: T[], draft: T[] | null, allowDraft: boolean): T[] {
+  if (allowDraft && draft && draft.length > 0) return draft;
+  return published;
+}
+
 export function readLocalZoneDraft(): any[] | null {
   return (
     readJsonArray(localStorage.getItem(ZONE_DRAFT_KEY)) ||
