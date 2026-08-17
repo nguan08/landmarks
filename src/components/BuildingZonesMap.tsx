@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { ZoneModal } from '@/components/ZoneModal';
+import { PublishMapBar } from '@/components/PublishMapBar';
+import {
+  fetchPublishedZones,
+  readLocalZoneDraft,
+  saveZoneDraft,
+  clearZoneDraft,
+} from '@/data/publishedMap';
 import { 
   Sparkles, 
   Layers, 
@@ -176,7 +183,7 @@ function getIconName(zone: Pick<ExhibitionZone, 'icon' | 'iconName' | 'name'>): 
   return zone.name || 'Sparkles';
 }
 
-function hydrateZone(raw: any): ExhibitionZone {
+export function hydrateZone(raw: any): ExhibitionZone {
   const iconName = raw?.iconName || raw?.name;
   return {
     ...raw,
@@ -188,7 +195,7 @@ function hydrateZone(raw: any): ExhibitionZone {
   };
 }
 
-function serializeZones(zones: ExhibitionZone[]) {
+export function serializeZones(zones: ExhibitionZone[]) {
   return zones.map((z) => ({
     id: z.id,
     name: z.name,
@@ -222,7 +229,7 @@ export function getStoredBuildingZones(): ExhibitionZone[] {
 
 function persistBuildingZones(zones: ExhibitionZone[]): boolean {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeZones(zones)));
+    saveZoneDraft(serializeZones(zones));
     return true;
   } catch (e) {
     console.error("Failed to save zones to storage", e);
@@ -233,8 +240,8 @@ function persistBuildingZones(zones: ExhibitionZone[]): boolean {
 export function BuildingZonesMap() {
   const { isAdmin, openLoginModal } = useAdminAuth();
 
-  const [zones, setZones] = useState<ExhibitionZone[]>(() => getStoredBuildingZones());
-  const [activeZone, setActiveZone] = useState<ExhibitionZone>(zones[2] || zones[0]);
+  const [zones, setZones] = useState<ExhibitionZone[]>(DEFAULT_BUILDING_ZONES);
+  const [activeZone, setActiveZone] = useState<ExhibitionZone>(DEFAULT_BUILDING_ZONES[2] || DEFAULT_BUILDING_ZONES[0]);
   const [hoveredZone, setHoveredZone] = useState<ExhibitionZone | null>(null);
   const [saveHint, setSaveHint] = useState<string>('');
   const [isPlacing, setIsPlacing] = useState<boolean>(false);
@@ -257,6 +264,22 @@ export function BuildingZonesMap() {
     setSaveHint(ok ? (message || 'บันทึกผังห้องแล้ว') : 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
     saveHintTimerRef.current = setTimeout(() => setSaveHint(''), 2200);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const publishedRaw = await fetchPublishedZones();
+      const published = (publishedRaw || DEFAULT_BUILDING_ZONES).map(hydrateZone);
+      const draft = isAdmin ? readLocalZoneDraft() : null;
+      const next = draft && draft.length > 0 ? draft.map(hydrateZone) : published;
+      if (cancelled) return;
+      setZones(next);
+      setActiveZone(next[2] || next[0]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
 
   useEffect(() => {
     return () => {
@@ -303,14 +326,13 @@ export function BuildingZonesMap() {
     }
   };
 
-  const handleResetDefaults = () => {
+  const handleResetDefaults = async () => {
     if (confirm('คุณต้องการรีเซ็ตผังห้องกลับเป็นค่าเริ่มต้นทางการทั้งหมดใช่หรือไม่?')) {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch {}
-      setZones(DEFAULT_BUILDING_ZONES);
-      setActiveZone(DEFAULT_BUILDING_ZONES[2]);
-      persistBuildingZones(DEFAULT_BUILDING_ZONES);
+      clearZoneDraft();
+      const publishedRaw = await fetchPublishedZones();
+      const published = (publishedRaw || DEFAULT_BUILDING_ZONES).map(hydrateZone);
+      setZones(published);
+      setActiveZone(published[2] || published[0]);
       showSaveHint(true, 'รีเซ็ตผังห้องแล้ว');
     }
   };
@@ -432,7 +454,8 @@ export function BuildingZonesMap() {
 
           {/* 🔐 Admin Controls (Visible only when logged in) 🔐 */}
           {isAdmin ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <PublishMapBar zones={serializeZones(zones)} />
               <button
                 onClick={() => {
                   if (isPlacing) {

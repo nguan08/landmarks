@@ -3,11 +3,16 @@ import { useAdminAuth } from '@/context/AdminAuthContext';
 import { 
   FestivalPoint, 
   DEFAULT_FESTIVAL_POINTS, 
-  getStoredFestivalPoints, 
   saveStoredFestivalPoints, 
-  resetStoredFestivalPoints 
 } from '@/data/festivalPoints';
 import { PointModal } from '@/components/PointModal';
+import { PublishMapBar } from '@/components/PublishMapBar';
+import {
+  fetchPublishedPoints,
+  readLocalPointDraft,
+  savePointDraft,
+  clearPointDraft,
+} from '@/data/publishedMap';
 import { 
   Map, 
   MapMarker, 
@@ -40,8 +45,8 @@ import {
 export function FestivalMap() {
   const { isAdmin, openLoginModal } = useAdminAuth();
 
-  const [points, setPoints] = useState<FestivalPoint[]>(() => getStoredFestivalPoints());
-  const [selectedPoint, setSelectedPoint] = useState<FestivalPoint | null>(null);
+  const [points, setPoints] = useState<FestivalPoint[]>(DEFAULT_FESTIVAL_POINTS);
+  const [selectedPoint, setSelectedPoint] = useState<FestivalPoint | null>(DEFAULT_FESTIVAL_POINTS[0] || null);
   const [copied, setCopied] = useState<boolean>(false);
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
   const [saveHint, setSaveHint] = useState<string>('');
@@ -66,6 +71,21 @@ export function FestivalMap() {
   };
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const published = await fetchPublishedPoints();
+      const draft = isAdmin ? readLocalPointDraft() : null;
+      const next = draft && draft.length > 0 ? draft : published;
+      if (cancelled) return;
+      setPoints(next);
+      setSelectedPoint(next[0] || null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
+
+  useEffect(() => {
     return () => {
       if (saveHintTimerRef.current) clearTimeout(saveHintTimerRef.current);
     };
@@ -84,6 +104,7 @@ export function FestivalMap() {
         ? prev.map(p => p.id === savedPoint.id ? savedPoint : p)
         : [...prev, savedPoint];
       saveStoredFestivalPoints(updated);
+      savePointDraft(updated);
       return updated;
     });
     showSaveHint(true);
@@ -97,6 +118,7 @@ export function FestivalMap() {
     setPoints((prev) => {
       const updated = prev.filter(p => p.id !== id);
       saveStoredFestivalPoints(updated);
+      savePointDraft(updated);
       return updated;
     });
     showSaveHint(true);
@@ -110,6 +132,7 @@ export function FestivalMap() {
         p.id === id ? { ...p, lng: lngLat.lng, lat: lngLat.lat } : p
       );
       saveStoredFestivalPoints(updated);
+      savePointDraft(updated);
       return updated;
     });
     showSaveHint(true, 'ย้ายหมุดและบันทึกแล้ว');
@@ -118,11 +141,12 @@ export function FestivalMap() {
     );
   };
 
-  const handleResetDefaults = () => {
+  const handleResetDefaults = async () => {
     if (confirm('คุณต้องการรีเซ็ตจุดแผนที่กลับเป็นค่าเริ่มต้นทางการทั้งหมดใช่หรือไม่?')) {
-      const def = resetStoredFestivalPoints();
-      setPoints(def);
-      setSelectedPoint(def[0]);
+      clearPointDraft();
+      const published = await fetchPublishedPoints();
+      setPoints(published);
+      setSelectedPoint(published[0] || null);
     }
   };
 
@@ -205,7 +229,8 @@ export function FestivalMap() {
 
           {/* 🔐 Admin Controls on Map (Visible when logged in) 🔐 */}
           {isAdmin && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <PublishMapBar points={points} />
               <button
                 onClick={() => {
                   setPointToEdit(null);

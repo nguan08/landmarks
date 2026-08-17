@@ -104,7 +104,7 @@ export const DEFAULT_FESTIVAL_POINTS: FestivalPoint[] = [
   }
 ];
 
-const STORAGE_KEYS = [
+export const STORAGE_KEYS = [
   'buriram_festival_points_v1',
   'buriram_festival_points',
   'buriram_festival_points_v2'
