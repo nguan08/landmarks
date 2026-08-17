@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "updatedAt": "2026-08-17T09:20:00.000Z",
+  "updatedAt": "2026-08-17T10:05:00.000Z",
   "points": [
     {
       "id": "main-thani-heritage",
@@ -35,7 +35,7 @@
     {
       "id": "glow-market",
       "name": "12 Glowing Chinese Zodiac",
-      "nameTh": "12 นักษัตรเรืองแสง",
+      "nameTh": "12นักษัตรเรืองแสง",
       "category": "photo_spot",
       "lat": 14.997263471596995,
       "lng": 103.10854677611684,
@@ -48,17 +48,17 @@
     },
     {
       "id": "acoustic-stage",
-      "name": "Ambient Light & Acoustic Stage",
-      "nameTh": "เวทีดนตรีสดและแสงสีเชิงสุนทรียภาพ",
-      "category": "stage",
+      "name": "Ambient Light and Neon Market",
+      "nameTh": "ตลาดเรืองแสง",
+      "category": "market",
       "lat": 15.000373057499388,
       "lng": 103.10925371049638,
       "mapX": 32,
       "mapY": 72,
-      "time": "19:00 - 23:00",
-      "description": "เวทีการแสดงดนตรีอะคูสติกและดนตรีร่วมสมัย ผสานระบบไฟ DMX Ambient Light ซิงค์ตามจังหวะเสียงดนตรีสด",
-      "color": "#A855F7",
-      "icon": "Music"
+      "time": "18:00 - 24:00",
+      "description": "เวทีการแสดงดนตรี และตลาดร้านอาหารต่างๆ ในยามค่ำคืนพร้อมแสงสลัวๆ",
+      "color": "#FF2E93",
+      "icon": "Store"
     },
     {
       "id": "photo-spot-gateway",
@@ -71,7 +71,7 @@
       "mapY": 18,
       "time": "19:00 - 24:00 ตลอดคืน",
       "description": "ซุ้มประตูลวดลายศิลาขอมเรืองแสงด้วยหลอด LED พิเศษ ให้แสงที่ถ่ายภาพบุคคลได้คมชัดสวยงาม",
-      "color": "#10B981",
+      "color": "#A855F7",
       "icon": "Camera"
     }
   ]
