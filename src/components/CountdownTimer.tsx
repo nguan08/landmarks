@@ -12,12 +12,12 @@ interface TimeLeft {
 export function CountdownTimer() {
   const getTargetDate = () => {
     const now = new Date();
-    // 21st of current month at 19:00:00
-    const target = new Date(now.getFullYear(), now.getMonth(), 21, 19, 0, 0);
+    // 21st of current month at 18:30:00
+    const target = new Date(now.getFullYear(), now.getMonth(), 21, 18, 30, 0);
     
-    // If the 21st at 19:00 has already passed this month, target next month's 21st
+    // If the 21st at 18:30 has already passed this month, target next month's 21st
     if (now.getTime() > target.getTime()) {
-      return new Date(now.getFullYear(), now.getMonth() + 1, 21, 19, 0, 0);
+      return new Date(now.getFullYear(), now.getMonth() + 1, 21, 18, 30, 0);
     }
     return target;
   };
@@ -59,7 +59,7 @@ export function CountdownTimer() {
     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
   ];
 
-  const targetDateFormatted = `21 ${monthNamesThai[targetDate.getMonth()]} เวลา 19:00 น.`;
+  const targetDateFormatted = `21 ${monthNamesThai[targetDate.getMonth()]} เวลา 18.30 น.`;
 
   const timeUnits = [
     { labelTh: 'วัน', labelEn: 'DAYS', value: timeLeft.days, color: 'from-cyan-400 to-blue-500', glow: 'shadow-[0_0_25px_rgba(0,240,255,0.4)]' },

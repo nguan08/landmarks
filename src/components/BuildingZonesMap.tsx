@@ -185,6 +185,32 @@ function getIconName(zone: Pick<ExhibitionZone, 'icon' | 'iconName' | 'name'>): 
   return zone.name || 'Sparkles';
 }
 
+function roomLightSize(zone: ExhibitionZone) {
+  const name = (zone.name || '').toUpperCase();
+  if (name.includes('ALLEY') || name.includes('LUMINOUS')) return { w: 18, h: 24 };
+  if (name.includes('CHILL')) return { w: 20, h: 18 };
+  if (name.includes('HORROR') || name.includes('STAIR')) return { w: 20, h: 16 };
+  if (name.includes('FOREST')) return { w: 26, h: 24 };
+  if (name.includes('JELLY')) return { w: 24, h: 20 };
+  return { w: 24, h: 22 };
+}
+
+function magicSpecks(seed: string, count: number) {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  return Array.from({ length: count }, (_, i) => {
+    h = Math.imul(h ^ (i + 1) * 2654435761, 1597334677);
+    const n = h >>> 0;
+    return {
+      left: (n % 1000) / 10,
+      top: ((n / 1000) % 1000) / 10,
+      size: 2 + (n % 4),
+      delay: ((n % 22) / 10),
+      duration: 1.8 + (n % 16) / 10,
+    };
+  });
+}
+
 export function hydrateZone(raw: any): ExhibitionZone {
   const iconName = raw?.iconName || raw?.name;
   return {
@@ -252,9 +278,12 @@ export function BuildingZonesMap() {
     return next[2] || next[0];
   });
   const [hoveredZone, setHoveredZone] = useState<ExhibitionZone | null>(null);
+  const [litLocked, setLitLocked] = useState<ExhibitionZone | null>(null);
   const [saveHint, setSaveHint] = useState<string>('');
   const [isPlacing, setIsPlacing] = useState<boolean>(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
+  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; color: string }>>([]);
 
   // Admin Modal States
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -267,6 +296,8 @@ export function BuildingZonesMap() {
   const dragOriginRef = useRef<{ x: number; y: number } | null>(null);
   const didDragRef = useRef(false);
   const saveHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rippleIdRef = useRef(0);
+  const pinHoverRef = useRef(false);
 
   const showSaveHint = (ok: boolean, message?: string) => {
     if (saveHintTimerRef.current) clearTimeout(saveHintTimerRef.current);
@@ -296,7 +327,14 @@ export function BuildingZonesMap() {
     };
   }, []);
 
-  const displayZone = hoveredZone || activeZone || zones[0];
+  const displayZone = hoveredZone || litLocked || activeZone || zones[0];
+  const litZone = litLocked;
+  const litLight = litZone ? roomLightSize(litZone) : null;
+
+  const lockRoom = (zone: ExhibitionZone) => {
+    setLitLocked(zone);
+    setActiveZone(zone);
+  };
   const displayHighlights = Array.isArray(displayZone?.highlights) ? displayZone.highlights : [];
   const DisplayIcon = displayZone?.icon && typeof displayZone.icon !== 'string'
     ? displayZone.icon
@@ -317,6 +355,7 @@ export function BuildingZonesMap() {
     });
     showSaveHint(true);
     setActiveZone(hydrated);
+    setLitLocked(hydrated);
     setIsModalOpen(false);
     setZoneToEdit(null);
     setNewClickPos(null);
@@ -331,7 +370,9 @@ export function BuildingZonesMap() {
     });
     showSaveHint(true);
     if (activeZone?.id === id) {
-      setActiveZone(zones.find(z => z.id !== id) || DEFAULT_BUILDING_ZONES[0]);
+      const next = zones.find(z => z.id !== id) || DEFAULT_BUILDING_ZONES[0];
+      setActiveZone(next);
+      setLitLocked((prev) => (prev?.id === id ? next : prev));
     }
   };
 
@@ -342,6 +383,7 @@ export function BuildingZonesMap() {
       const published = (publishedRaw || DEFAULT_BUILDING_ZONES).map(hydrateZone);
       setZones(published);
       setActiveZone(published[2] || published[0]);
+      setLitLocked(null);
       showSaveHint(true, 'รีเซ็ตผังห้องแล้ว');
     }
   };
@@ -357,6 +399,71 @@ export function BuildingZonesMap() {
     };
   };
 
+  const rawPointFromEvent = (clientX: number, clientY: number) => {
+    const rect = floorplanRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return null;
+    return {
+      x: Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)),
+      y: Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100)),
+    };
+  };
+
+  const zoneDistance = (pos: { x: number; y: number }, zone: ExhibitionZone) =>
+    Math.hypot((zone.x - pos.x) * 1.33, zone.y - pos.y);
+
+  const nearestZone = (pos: { x: number; y: number }, maxDist = 16) => {
+    let best: ExhibitionZone | null = null;
+    let bestDist = maxDist;
+    for (const zone of zones) {
+      const dist = zoneDistance(pos, zone);
+      if (dist < bestDist) {
+        best = zone;
+        bestDist = dist;
+      }
+    }
+    return best;
+  };
+
+  const spawnRipple = (pos: { x: number; y: number }, color: string) => {
+    const id = ++rippleIdRef.current;
+    setRipples((prev) => [...prev.slice(-4), { id, x: pos.x, y: pos.y, color }]);
+    window.setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== id));
+    }, 800);
+  };
+
+  const handleFloorPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isAdmin && (draggingRef.current || isPlacing)) return;
+    if (e.pointerType === 'touch' && e.buttons === 0) return;
+    const next = rawPointFromEvent(e.clientX, e.clientY);
+    if (!next) return;
+    setPointer(next);
+    if (pinHoverRef.current) return;
+    const near = nearestZone(next);
+    setHoveredZone(near);
+    if (near) lockRoom(near);
+  };
+
+  const handleFloorPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isAdmin && (draggingRef.current || isPlacing)) return;
+    const next = rawPointFromEvent(e.clientX, e.clientY);
+    if (!next) return;
+    pinHoverRef.current = false;
+    setPointer(next);
+    const near = nearestZone(next, e.pointerType === 'touch' ? 18 : 16);
+    spawnRipple(next, near?.color || displayZone?.color || '#FFB020');
+    if (near) {
+      setHoveredZone(near);
+      lockRoom(near);
+    }
+  };
+
+  const handleFloorPointerLeave = () => {
+    if (draggingRef.current) return;
+    setPointer(null);
+    if (!pinHoverRef.current) setHoveredZone(null);
+  };
+
   const handlePinPointerDown = (e: React.PointerEvent, zone: ExhibitionZone) => {
     if (!isAdmin) return;
     e.preventDefault();
@@ -368,6 +475,7 @@ export function BuildingZonesMap() {
     didDragRef.current = false;
     setDraggingId(zone.id);
     setActiveZone(zone);
+    setLitLocked(zone);
     setHoveredZone(null);
   };
 
@@ -384,6 +492,7 @@ export function BuildingZonesMap() {
     didDragRef.current = true;
     setZones((prev) => prev.map((z) => (z.id === zoneId ? { ...z, x: next.x, y: next.y } : z)));
     setActiveZone((prev) => (prev?.id === zoneId ? { ...prev, x: next.x, y: next.y } : prev));
+    setLitLocked((prev) => (prev?.id === zoneId ? { ...prev, x: next.x, y: next.y } : prev));
   };
 
   const handlePinPointerUp = (e: React.PointerEvent, zone: ExhibitionZone) => {
@@ -437,7 +546,7 @@ export function BuildingZonesMap() {
             ผังห้องจัดแสดงภายในอาคาร • 7 โซนไฮไลท์
           </h2>
           <p className="text-sm font-mono-code text-slate-400 mt-1">
-            นำเมาส์ชี้หรือคลิกที่แต่ละห้องบนผังอาคาร เพื่อชมรายละเอียด การจัดแสดงแสงไฟ และไฮไลท์ของแต่ละโซน
+            ลากเมาส์ผ่านหรือคลิกห้อง แสงจะค้างไว้จนกว่าจะเลือกห้องอื่น
           </p>
         </div>
 
@@ -535,9 +644,14 @@ export function BuildingZonesMap() {
           <div
             ref={floorplanRef}
             className={`relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-white/[0.12] bg-[#111113] shadow-inner flex items-center justify-center ${
-              isPlacing ? 'cursor-crosshair' : ''
+              isPlacing ? 'cursor-crosshair' : 'cursor-crosshair'
             }`}
+            style={{ touchAction: isAdmin ? 'none' : 'manipulation' }}
             onClick={handleFloorplanClick}
+            onPointerMove={handleFloorPointerMove}
+            onPointerDown={handleFloorPointerDown}
+            onPointerLeave={handleFloorPointerLeave}
+            onPointerCancel={handleFloorPointerLeave}
           >
             
             {/* THANI HERITAGE Official Emblem Stamp overlay on top corner */}
@@ -561,41 +675,197 @@ export function BuildingZonesMap() {
             <img
               src="/thani-heritage-floorplan.jpg"
               alt="THANI HERITAGE Exhibition Floor Plan"
-              className="w-full h-full object-contain select-none"
+              className="w-full h-full object-contain select-none pointer-events-none"
               style={{ imageRendering: '-webkit-optimize-contrast' }}
             />
+
+            <div
+              className="absolute inset-0 pointer-events-none z-[8] transition-all duration-300"
+              style={{
+                backgroundColor: 'rgba(0,0,0,0.60)',
+                WebkitMaskImage: litZone && litLight
+                  ? `radial-gradient(ellipse ${litLight.w}% ${litLight.h}% at ${litZone.x}% ${litZone.y}%, transparent 0%, transparent 46%, black 78%)`
+                  : undefined,
+                maskImage: litZone && litLight
+                  ? `radial-gradient(ellipse ${litLight.w}% ${litLight.h}% at ${litZone.x}% ${litZone.y}%, transparent 0%, transparent 46%, black 78%)`
+                  : undefined,
+              }}
+            />
+            {litZone && litLight && (
+              <>
+                <div
+                  className="absolute inset-0 pointer-events-none z-[9] mix-blend-screen animate-magic-breathe"
+                  style={{
+                    background: `radial-gradient(ellipse ${litLight.w}% ${litLight.h}% at ${litZone.x}% ${litZone.y}%, ${litZone.color}cc 0%, ${litZone.color}88 28%, ${litZone.color}44 52%, transparent 76%)`,
+                  }}
+                />
+                <div
+                  className="absolute z-[11] pointer-events-none rounded-full border animate-magic-spin"
+                  style={{
+                    left: `${litZone.x}%`,
+                    top: `${litZone.y}%`,
+                    width: `${litLight.w * 2.1}%`,
+                    height: `${litLight.h * 2.1}%`,
+                    borderColor: `${litZone.color}99`,
+                    boxShadow: `0 0 18px ${litZone.color}55, inset 0 0 18px ${litZone.color}33`,
+                  }}
+                />
+                <div
+                  className="absolute z-[11] pointer-events-none rounded-full border border-dashed animate-magic-spin-rev"
+                  style={{
+                    left: `${litZone.x}%`,
+                    top: `${litZone.y}%`,
+                    width: `${litLight.w * 2.7}%`,
+                    height: `${litLight.h * 2.7}%`,
+                    borderColor: `${litZone.color}66`,
+                  }}
+                />
+                <div
+                  className="absolute z-[11] pointer-events-none rounded-full border animate-magic-pulse-ring"
+                  style={{
+                    left: `${litZone.x}%`,
+                    top: `${litZone.y}%`,
+                    width: `${litLight.w * 1.5}%`,
+                    height: `${litLight.h * 1.5}%`,
+                    borderColor: `${litZone.color}aa`,
+                    boxShadow: `0 0 28px ${litZone.color}`,
+                  }}
+                />
+                {magicSpecks(litZone.id, 14).map((speck, i) => (
+                  <div
+                    key={`${litZone.id}-mote-${i}`}
+                    className="absolute z-[12] pointer-events-none rounded-full animate-magic-mote"
+                    style={{
+                      left: `${litZone.x + (speck.left - 50) * (litLight.w / 100)}%`,
+                      top: `${litZone.y + (speck.top - 50) * (litLight.h / 100)}%`,
+                      width: speck.size,
+                      height: speck.size,
+                      backgroundColor: i % 3 === 0 ? '#fff' : litZone.color,
+                      boxShadow: `0 0 8px ${litZone.color}`,
+                      animationDelay: `${speck.delay}s`,
+                      animationDuration: `${speck.duration}s`,
+                    }}
+                  />
+                ))}
+                {magicSpecks(`${litZone.id}-twinkle`, 10).map((speck, i) => (
+                  <div
+                    key={`${litZone.id}-twinkle-${i}`}
+                    className="absolute z-[12] pointer-events-none rounded-full animate-magic-twinkle"
+                    style={{
+                      left: `${litZone.x + (speck.left - 50) * (litLight.w / 110)}%`,
+                      top: `${litZone.y + (speck.top - 50) * (litLight.h / 110)}%`,
+                      width: speck.size,
+                      height: speck.size,
+                      backgroundColor: '#fff',
+                      boxShadow: `0 0 10px ${litZone.color}`,
+                      animationDelay: `${speck.delay}s`,
+                      animationDuration: `${1.6 + speck.duration * 0.4}s`,
+                    }}
+                  />
+                ))}
+              </>
+            )}
+
+            {magicSpecks('ambient-map', 18).map((speck, i) => (
+              <div
+                key={`ambient-${i}`}
+                className="absolute z-[7] pointer-events-none rounded-full animate-magic-twinkle"
+                style={{
+                  left: `${8 + (speck.left * 0.84)}%`,
+                  top: `${8 + (speck.top * 0.84)}%`,
+                  width: 2,
+                  height: 2,
+                  backgroundColor: i % 2 === 0 ? '#FFE7A3' : '#E0F7FF',
+                  opacity: 0.35,
+                  animationDelay: `${speck.delay}s`,
+                  animationDuration: `${2.8 + speck.duration}s`,
+                }}
+              />
+            ))}
+
+            {ripples.map((ripple) => (
+              <React.Fragment key={ripple.id}>
+                <div
+                  className="absolute z-20 pointer-events-none h-16 w-16 rounded-full border-2 animate-floor-ripple"
+                  style={{
+                    left: `${ripple.x}%`,
+                    top: `${ripple.y}%`,
+                    borderColor: ripple.color,
+                    boxShadow: `0 0 18px ${ripple.color}`,
+                  }}
+                />
+                <div
+                  className="absolute z-20 pointer-events-none h-10 w-10 rounded-full border animate-floor-ripple"
+                  style={{
+                    left: `${ripple.x}%`,
+                    top: `${ripple.y}%`,
+                    borderColor: '#fff',
+                    animationDelay: '0.08s',
+                  }}
+                />
+                <div
+                  className="absolute z-20 pointer-events-none h-24 w-24 rounded-full border border-dashed animate-floor-ripple"
+                  style={{
+                    left: `${ripple.x}%`,
+                    top: `${ripple.y}%`,
+                    borderColor: ripple.color,
+                    animationDelay: '0.14s',
+                  }}
+                />
+              </React.Fragment>
+            ))}
 
             {/* 🌟 Interactive Hotspot Pins & Tooltips over each room 🌟 */}
             {zones.map((zone) => {
               const isActive = activeZone?.id === zone.id;
               const isHovered = hoveredZone?.id === zone.id;
               const isCurrent = isActive || isHovered;
+              const isLit = litZone?.id === zone.id;
               const Icon = zone.icon || Sparkles;
 
               return (
                 <div
                   key={zone.id}
                   style={{ left: `${zone.x}%`, top: `${zone.y}%`, touchAction: isAdmin ? 'none' : 'auto' }}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 z-30 group/pin ${
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 group/pin transition-opacity duration-300 ${
                     isAdmin ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-                  } ${draggingId === zone.id ? 'z-40' : ''}`}
+                  } ${isHovered || draggingId === zone.id ? 'z-50' : 'z-30'} ${
+                    litZone && !isLit ? 'opacity-45' : 'opacity-100'
+                  }`}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (didDragRef.current) {
                       didDragRef.current = false;
                       return;
                     }
-                    setActiveZone(zone);
+                    setHoveredZone(zone);
+                    lockRoom(zone);
                   }}
-                  onPointerDown={(e) => handlePinPointerDown(e, zone)}
-                  onPointerMove={(e) => handlePinPointerMove(e, zone.id)}
+                  onPointerDown={(e) => {
+                    if (isAdmin) {
+                      handlePinPointerDown(e, zone);
+                      return;
+                    }
+                    pinHoverRef.current = true;
+                    setHoveredZone(zone);
+                    lockRoom(zone);
+                  }}
+                  onPointerMove={(e) => {
+                    handlePinPointerMove(e, zone.id);
+                    if (!isAdmin) handleFloorPointerMove(e);
+                  }}
                   onPointerUp={(e) => handlePinPointerUp(e, zone)}
                   onPointerCancel={(e) => handlePinPointerUp(e, zone)}
                   onMouseEnter={() => {
-                    if (!draggingRef.current) setHoveredZone(zone);
+                    if (draggingRef.current) return;
+                    pinHoverRef.current = true;
+                    setHoveredZone(zone);
+                    lockRoom(zone);
                   }}
                   onMouseLeave={() => {
-                    if (!draggingRef.current) setHoveredZone(null);
+                    if (draggingRef.current) return;
+                    pinHoverRef.current = false;
+                    setHoveredZone(null);
                   }}
                 >
                   {/* Glowing Hotspot Ring */}
@@ -627,32 +897,44 @@ export function BuildingZonesMap() {
                       </span>
                     </div>
 
-                    {/* 🌟 Interactive Floating Tooltip (Hover Preview) 🌟 */}
-                    <div 
-                      className={`absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 p-3.5 rounded-2xl bg-black/95 border border-white/20 shadow-[0_10px_35px_rgba(0,0,0,0.95)] backdrop-blur-2xl pointer-events-none transition-all duration-200 z-50 flex flex-col gap-1.5 text-left ${
-                        isHovered ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95 pointer-events-none'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono-code font-bold" style={{ color: zone.color }}>
-                        <Icon className="w-3 h-3" />
-                        <span>{zone.tag}</span>
-                      </div>
-                      <h4 className="text-xs font-bold font-heading text-white">
-                        {zone.nameTh}
-                      </h4>
-                      <p className="text-[11px] text-slate-300 font-sans leading-relaxed line-clamp-2">
-                        {zone.shortDesc}
-                      </p>
-                      <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[9px] font-mono-code text-slate-400">
-                        <span>คลิกเพื่อดูไฮไลท์</span>
-                        <ArrowRight className="w-3 h-3 text-amber-400" />
-                      </div>
-                    </div>
-
                   </div>
                 </div>
               );
             })}
+
+            {hoveredZone && (() => {
+              const TipIcon = hoveredZone.icon || Sparkles;
+              const placeBelow = hoveredZone.y < 38;
+              return (
+                <div
+                  className="absolute z-[60] w-[min(16rem,calc(100%-16px))] p-3.5 rounded-2xl bg-black/95 border border-white/20 shadow-[0_10px_35px_rgba(0,0,0,0.95)] backdrop-blur-2xl pointer-events-none flex flex-col gap-1.5 text-left"
+                  style={{
+                    left: `clamp(8px, calc(${hoveredZone.x}% - 8rem), calc(100% - 16rem - 8px))`,
+                    top: placeBelow
+                      ? `clamp(8px, calc(${hoveredZone.y}% + 26px), calc(100% - 9.5rem))`
+                      : undefined,
+                    bottom: placeBelow
+                      ? undefined
+                      : `clamp(8px, calc(${100 - hoveredZone.y}% + 26px), calc(100% - 8px))`,
+                  }}
+                >
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono-code font-bold" style={{ color: hoveredZone.color }}>
+                    <TipIcon className="w-3 h-3" />
+                    <span>{hoveredZone.tag}</span>
+                  </div>
+                  <h4 className="text-xs font-bold font-heading text-white">
+                    {hoveredZone.nameTh}
+                  </h4>
+                  <p className="text-[11px] text-slate-300 font-sans leading-relaxed line-clamp-2">
+                    {hoveredZone.shortDesc}
+                  </p>
+                  <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[9px] font-mono-code text-slate-400">
+                    <span>คลิกเพื่อดูไฮไลท์</span>
+                    <ArrowRight className="w-3 h-3 text-amber-400" />
+                  </div>
+                </div>
+              );
+            })()}
 
           </div>
 
@@ -667,8 +949,8 @@ export function BuildingZonesMap() {
                 <button
                   key={zone.id}
                   onClick={() => {
-                    setActiveZone(zone);
                     setHoveredZone(null);
+                    lockRoom(zone);
                   }}
                   className={`px-3 py-1.5 rounded-xl text-[11px] font-mono-code whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 shrink-0 border cursor-pointer ${
                     isSelected 
@@ -787,8 +1069,8 @@ export function BuildingZonesMap() {
                   <div
                     key={zone.id}
                     onClick={() => {
-                      setActiveZone(zone);
                       setHoveredZone(null);
+                      lockRoom(zone);
                     }}
                     className={`p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-2 ${
                       isSelected 

@@ -98,7 +98,7 @@ export function App() {
     if (navigator.share) {
       navigator.share({
         title: 'Buriram Night & Glow Festival 2026',
-        text: 'นับถอยหลังสู่งาน Buriram Night & Glow วันที่ 21 เวลา 19:00 น. ณ THANI HERITAGE จัดโดย Landmark LightWork!',
+        text: 'นับถอยหลังสู่งาน Buriram Night & Glow วันที่ 21 เวลา 18.30 น. ณ THANI HERITAGE จัดโดย Landmark LightWork!',
         url: window.location.href,
       }).catch(() => {});
     } else {
@@ -269,8 +269,8 @@ export function App() {
               </p>
             </div>
 
-            <p className="text-xs sm:text-sm font-mono-code text-slate-300 max-w-xl mx-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] pt-1 leading-relaxed">
-              สัมผัสความงามของสถาปัตยกรรมมรดก <strong>THANI HERITAGE (ธานี เฮอริเทจ)</strong> ผสาน 3D Projection Mapping และประติมากรรมแสงไฟระดับโลก โดย <strong>Landmark LightWork</strong>
+            <p className="text-xs sm:text-sm font-mono-code text-slate-300 max-w-2xl mx-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] pt-1 leading-relaxed">
+              สัมผัสสถาปัตยกรรมตึกโบราณมรดกของถนนธานี <strong>THANI HERITAGE</strong> ด้านในพบกับการจัดแสงผสมผสานกับการทำ visual art จุดถ่ายภาพ และ immersive art พร้อมกับถนนเรืองแสง การเพ้นตัวและหน้าเรืองแสง (เสื้อสีขาวจะทำให้เรืองแสงและถ่ายภาพสวย) พร้อมโซนนั่งชิลล์ฟังเพลง ในบรรยากาศแสงสลัว
             </p>
           </div>
 
@@ -298,7 +298,7 @@ export function App() {
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">GATES OPEN</span>
-                <span className="text-white font-bold">19:00 น. เป็นต้นไป</span>
+                <span className="text-white font-bold">18.30 น. เป็นต้นไป</span>
               </div>
             </div>
 
@@ -324,7 +324,66 @@ export function App() {
 
           </div>
 
-          {/* 🌟 ACTION BUTTONS 🌟 */}
+          {/* Main sponsors: TAT + Amazing Thailand */}
+          <div className="w-full max-w-3xl flex flex-col items-center gap-3.5 mb-8">
+            <span className="text-[10px] font-mono-code tracking-[0.28em] uppercase text-slate-400">
+              ผู้สนับสนุนหลัก • Main Sponsor
+            </span>
+            <div className="flex items-center justify-center gap-7 sm:gap-12">
+              <a
+                href="https://www.tat.or.th/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group no-underline"
+                title="การท่องเที่ยวแห่งประเทศไทย (ททท.)"
+              >
+                <img
+                  src="/tat-tourism-logo.png"
+                  alt="การท่องเที่ยวแห่งประเทศไทย Tourism Authority of Thailand"
+                  className="h-[4.75rem] w-[4.75rem] sm:h-[6.25rem] sm:w-[6.25rem] object-contain"
+                />
+              </a>
+
+              <div className="h-14 sm:h-[4.5rem] w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+
+              <a
+                href="https://www.tourismthailand.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group no-underline"
+                title="Amazing Thailand"
+              >
+                <img
+                  src="/amazing-thailand-logo.png"
+                  alt="Amazing Thailand"
+                  className="h-[3.6rem] sm:h-[5.1rem] w-auto max-w-[13.5rem] sm:max-w-[18rem] object-contain drop-shadow-[0_6px_20px_rgba(233,31,143,0.3)] group-hover:scale-105 transition-transform duration-300"
+                />
+              </a>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 pt-1">
+              <span className="text-[10px] font-mono-code tracking-[0.28em] uppercase text-slate-500">
+                Supporting Sponsor
+              </span>
+              <div className="flex items-center justify-center gap-4 sm:gap-6">
+                <img
+                  src="/jon-voranuch-logo.png"
+                  alt="จอนวรนุช"
+                  className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
+                />
+                <img
+                  src="/tao-bin-logo.png"
+                  alt="เต่าบิน"
+                  className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
+                />
+                <img
+                  src="/super-a-logo.png"
+                  alt="Super A+"
+                  className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
+                />
+              </div>
+            </div>
+          </div>
           <div className="flex flex-wrap items-center justify-center gap-3.5 mb-3">
             
             <button
@@ -504,8 +563,44 @@ export function App() {
           <span>•</span>
           <span className="text-slate-400">Landmark LightWork</span>
         </div>
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <span className="text-[10px] tracking-[0.22em] uppercase text-slate-500">ผู้สนับสนุนหลัก</span>
+          <div className="flex items-center justify-center gap-5">
+            <img
+              src="/tat-tourism-logo.png"
+              alt="การท่องเที่ยวแห่งประเทศไทย"
+              className="w-10 h-10 object-contain"
+            />
+            <div className="h-8 w-px bg-white/15" />
+            <img
+              src="/amazing-thailand-logo.png"
+              alt="Amazing Thailand"
+              className="h-8 w-auto max-w-[8.5rem] object-contain"
+            />
+          </div>
+          <div className="flex flex-col items-center gap-1.5 pt-1">
+            <span className="text-[10px] tracking-[0.22em] uppercase text-slate-500">Supporting Sponsor</span>
+            <div className="flex items-center justify-center gap-3">
+              <img
+                src="/jon-voranuch-logo.png"
+                alt="จอนวรนุช"
+                className="w-10 h-10 object-contain"
+              />
+              <img
+                src="/tao-bin-logo.png"
+                alt="เต่าบิน"
+                className="w-10 h-10 object-contain"
+              />
+              <img
+                src="/super-a-logo.png"
+                alt="Super A+"
+                className="w-10 h-10 object-contain"
+              />
+            </div>
+          </div>
+        </div>
         <p className="text-slate-400 text-[11px]">
-          สถานที่จัดแสดงงาน: THANI HERITAGE พิกัด 14.999923, 103.109930 | วันที่ 21 เวลา 19:00 น. | บุรีรัมย์ ประเทศไทย
+          สถานที่จัดแสดงงาน: THANI HERITAGE พิกัด 14.999923, 103.109930 | วันที่ 21 เวลา 18.30 น. | บุรีรัมย์ ประเทศไทย
         </p>
 
         {/* Footer Admin Switch */}
