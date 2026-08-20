@@ -27,6 +27,20 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const SUPPORTING_SPONSORS = [
+  { src: '/jon-voranuch-logo.png', alt: 'จอนวรนุช' },
+  { src: '/tao-bin-logo.png', alt: 'เต่าบิน' },
+  { src: '/super-a-logo.png', alt: 'Super A+' },
+  { src: '/sponsors/srinuch.png', alt: 'ศรีนุช' },
+  { src: '/sponsors/tcb-buriram.png', alt: 'สภาอุตสาหกรรมการท่องเที่ยวจังหวัดบุรีรัมย์' },
+  { src: '/sponsors/bta.png', alt: 'สมาคมส่งเสริมการท่องเที่ยวจังหวัดบุรีรัมย์' },
+  { src: '/sponsors/chery.png', alt: 'Chery Srihaithong Beyond Buriram' },
+  { src: '/sponsors/chaitavee.jpg', alt: 'ชัยทวี' },
+  { src: '/sponsors/auto77.png', alt: 'อะไหล่ยนต์ 77' },
+  { src: '/sponsors/master-shirt.jpg', alt: 'Master Shirt' },
+  { src: '/sponsors/happy-laundry.jpg', alt: 'Happy Laundry' },
+];
+
 export function App() {
   const { isAdmin, openLoginModal, logout } = useAdminAuth();
   const [shareCopied, setShareCopied] = useState(false);
@@ -340,7 +354,7 @@ export function App() {
                 <img
                   src="/tat-tourism-logo.png"
                   alt="การท่องเที่ยวแห่งประเทศไทย Tourism Authority of Thailand"
-                  className="h-[4.75rem] w-[4.75rem] sm:h-[6.25rem] sm:w-[6.25rem] object-contain"
+                  className="h-16 w-16 sm:h-20 sm:w-20 object-contain"
                 />
               </a>
 
@@ -356,7 +370,7 @@ export function App() {
                 <img
                   src="/amazing-thailand-logo.png"
                   alt="Amazing Thailand"
-                  className="h-[3.6rem] sm:h-[5.1rem] w-auto max-w-[13.5rem] sm:max-w-[18rem] object-contain drop-shadow-[0_6px_20px_rgba(233,31,143,0.3)] group-hover:scale-105 transition-transform duration-300"
+                  className="h-16 w-28 sm:h-20 sm:w-36 object-contain"
                 />
               </a>
             </div>
@@ -365,23 +379,20 @@ export function App() {
               <span className="text-[10px] font-mono-code tracking-[0.28em] uppercase text-slate-500">
                 Supporting Sponsor
               </span>
-              <div className="flex items-center justify-center gap-4 sm:gap-6">
-                <img
-                  src="/jon-voranuch-logo.png"
-                  alt="จอนวรนุช"
-                  className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
-                />
-                <img
-                  src="/tao-bin-logo.png"
-                  alt="เต่าบิน"
-                  className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
-                />
-                <img
-                  src="/super-a-logo.png"
-                  alt="Super A+"
-                  className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
-                />
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 px-1">
+                {SUPPORTING_SPONSORS.map((logo) => (
+                  <img
+                    key={logo.src}
+                    src={logo.src}
+                    alt={logo.alt}
+                    title={logo.alt}
+                    className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
+                  />
+                ))}
               </div>
+              <p className="max-w-xl text-center text-[11px] sm:text-xs font-mono-code text-slate-400 leading-relaxed pt-1">
+                ผู้สนับสนุนตั้งแต่ 1,000 บาทขึ้นไป จะได้แสดงโลโก้ 3D หน้างาน บนสื่อประชาสัมพันธ์ และบนเว็บไซต์นี้
+              </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3.5 mb-3">
@@ -569,33 +580,27 @@ export function App() {
             <img
               src="/tat-tourism-logo.png"
               alt="การท่องเที่ยวแห่งประเทศไทย"
-              className="w-10 h-10 object-contain"
+              className="w-11 h-11 object-contain"
             />
             <div className="h-8 w-px bg-white/15" />
             <img
               src="/amazing-thailand-logo.png"
               alt="Amazing Thailand"
-              className="h-8 w-auto max-w-[8.5rem] object-contain"
+              className="h-11 w-20 object-contain"
             />
           </div>
           <div className="flex flex-col items-center gap-1.5 pt-1">
             <span className="text-[10px] tracking-[0.22em] uppercase text-slate-500">Supporting Sponsor</span>
-            <div className="flex items-center justify-center gap-3">
-              <img
-                src="/jon-voranuch-logo.png"
-                alt="จอนวรนุช"
-                className="w-10 h-10 object-contain"
-              />
-              <img
-                src="/tao-bin-logo.png"
-                alt="เต่าบิน"
-                className="w-10 h-10 object-contain"
-              />
-              <img
-                src="/super-a-logo.png"
-                alt="Super A+"
-                className="w-10 h-10 object-contain"
-              />
+            <div className="flex flex-wrap items-center justify-center gap-2.5 max-w-xl">
+              {SUPPORTING_SPONSORS.map((logo) => (
+                <img
+                  key={logo.src}
+                  src={logo.src}
+                  alt={logo.alt}
+                  title={logo.alt}
+                  className="h-10 w-10 object-contain"
+                />
+              ))}
             </div>
           </div>
         </div>
