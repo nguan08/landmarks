@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { existsSync, copyFileSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 function mapPublishPlugin(): Plugin {

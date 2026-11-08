@@ -88,7 +88,16 @@ export function FestivalMap() {
   }, [isAdmin]);
 
   useEffect(() => {
+    const handleResize = () => {
+      mapRef.current?.resize?.();
+    };
+    window.addEventListener('resize', handleResize);
+    const t1 = setTimeout(handleResize, 300);
+    const t2 = setTimeout(handleResize, 1000);
     return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(t1);
+      clearTimeout(t2);
       if (saveHintTimerRef.current) clearTimeout(saveHintTimerRef.current);
     };
   }, []);
@@ -253,6 +262,18 @@ export function FestivalMap() {
               </button>
             </div>
           )}
+
+          {/* Direct Google Maps Navigation Button */}
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs font-mono-code transition-all cursor-pointer shadow-[0_0_15px_rgba(255,176,32,0.3)] hover:scale-105 active:scale-95"
+            title="เปิดพิกัดงานใน Google Maps"
+          >
+            <Navigation className="w-3.5 h-3.5 text-black" />
+            <span>เปิด Google Maps</span>
+          </a>
 
           {/* Copy GPS button */}
           <button

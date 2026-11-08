@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Radial Neon Glow -->
+    <radialGradient id="portalGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E84393" stop-opacity="0.45" />
+      <stop offset="60%" stop-color="#FEA7CE" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#050508" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Main Stack Neon Gradient -->
+    <linearGradient id="stackGrad" x1="0%" y1="0%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#DE4383" />
+      <stop offset="45%" stop-color="#E84393" />
+      <stop offset="75%" stop-color="#FD79A8" />
+      <stop offset="100%" stop-color="#FEA7CE" />
+    </linearGradient>
+
+    <!-- Flank Accents Gradient -->
+    <linearGradient id="flankGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FEA7CE" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#E84393" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#DE4383" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Squircle Border Stroke Gradient -->
+    <linearGradient id="squircleBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEA7CE" stop-opacity="0.5" />
+      <stop offset="50%" stop-color="#E84393" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.8" />
+    </linearGradient>
+
+    <!-- High-Impact Neon Filter -->
+    <filter id="neonBlur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Deep Obsidian Curved Squircle Background -->
+  <rect width="512" height="512" rx="116" fill="#060608" />
+  <rect x="6" y="6" width="500" height="500" rx="110" fill="none" stroke="url(#squircleBorder)" stroke-width="3" />
+
+  <!-- Core Atmosphere Radial Bloom -->
+  <circle cx="256" cy="256" r="210" fill="url(#portalGlow)" />
+
+  <!-- Flanking Left Perspective Slats -->
+  <g opacity="0.45" stroke="url(#flankGrad)" stroke-width="2.5" fill="none">
+    <polyline points="48,175 62,185 62,327 48,337" />
+    <polyline points="64,190 76,198 76,314 64,322" />
+    <polyline points="78,205 88,212 88,300 78,307" />
+  </g>
+
+  <!-- Flanking Right Perspective Slats -->
+  <g opacity="0.45" stroke="url(#flankGrad)" stroke-width="2.5" fill="none">
+    <polyline points="464,175 450,185 450,327 464,337" />
+    <polyline points="448,190 436,198 436,314 448,322" />
+    <polyline points="434,205 424,212 424,300 434,307" />
+  </g>
+
+  <!-- 🌟 THE STACK 8-TIER ISOMETRIC PORTAL GEOMETRY 🌟 -->
+  <!-- Corner Perspective Connecting Rails -->
+  <g stroke="url(#stackGrad)" stroke-width="2" stroke-opacity="0.35" fill="none" stroke-dasharray="4 3">
+    <!-- Top-Left Rail -->
+    <line x1="105" y1="175" x2="210" y2="105" />
+    <!-- Top-Right Rail -->
+    <line x1="265" y1="110" x2="350" y2="55" />
+    <!-- Bottom-Right Rail -->
+    <line x1="265" y1="380" x2="350" y2="325" />
+    <!-- Bottom-Left Rail -->
+    <line x1="105" y1="445" x2="210" y2="375" />
+  </g>
+
+  <!-- 8 Concentric Isometric Frames from Layer 8 (Back) to Layer 1 (Front) -->
+  <!-- Layer 8 (Deepest/Back) -->
+  <polygon points="210,105 350,55 350,325 210,375" fill="none" stroke="url(#stackGrad)" stroke-width="4.5" stroke-opacity="0.65" />
+
+  <!-- Layer 7 -->
+  <polygon points="195,115 338,63 338,333 195,385" fill="none" stroke="url(#stackGrad)" stroke-width="4.5" stroke-opacity="0.70" />
+
+  <!-- Layer 6 -->
+  <polygon points="180,125 326,71 326,341 180,395" fill="none" stroke="url(#stackGrad)" stroke-width="5" stroke-opacity="0.75" />
+
+  <!-- Layer 5 -->
+  <polygon points="165,135 314,79 314,349 165,405" fill="none" stroke="url(#stackGrad)" stroke-width="5.5" stroke-opacity="0.80" />
+
+  <!-- Layer 4 -->
+  <polygon points="150,145 302,87 302,357 150,415" fill="none" stroke="url(#stackGrad)" stroke-width="6" stroke-opacity="0.85" />
+
+  <!-- Layer 3 -->
+  <polygon points="135,155 290,95 290,365 135,425" fill="none" stroke="url(#stackGrad)" stroke-width="6.5" stroke-opacity="0.90" />
+
+  <!-- Layer 2 -->
+  <polygon points="120,165 278,103 278,373 120,435" fill="none" stroke="url(#stackGrad)" stroke-width="7" stroke-opacity="0.95" />
+
+  <!-- Layer 1 (Front Entrance Frame - Glowing Highlight) -->
+  <polygon points="105,175 265,110 265,380 105,445" fill="rgba(232, 67, 147, 0.06)" stroke="url(#stackGrad)" stroke-width="8" filter="url(#neonBlur)" />
+
+  <!-- Inner Portal Frame Depth Opening (Creating the Portal Doorway) -->
+  <polygon points="125,200 245,150 245,355 125,405" fill="none" stroke="url(#stackGrad)" stroke-width="3" stroke-opacity="0.4" stroke-dasharray="6 4" />
+
+  <!-- Center Portal Singularity Sparkle -->
+  <circle cx="280" cy="215" r="5" fill="#FFFFFF" filter="url(#neonBlur)" />
+  <circle cx="280" cy="215" r="14" fill="#FEA7CE" opacity="0.5" />
+</svg>

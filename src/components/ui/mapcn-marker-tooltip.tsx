@@ -23,60 +23,6 @@ function cn(...inputs: Array<string | false | null | undefined>) {
   return inputs.filter(Boolean).join(" ");
 }
 
-// 🌟 100% Reliable, Zero-CORS, High-Res Retina Map Tiles for MapLibre 🌟
-const defaultStyles: Record<Theme, StyleSpecification> = {
-  dark: {
-    version: 8,
-    sources: {
-      "carto-dark": {
-        type: "raster",
-        tiles: [
-          "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-          "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-          "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-          "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        ],
-        tileSize: 256,
-        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-      },
-    },
-    layers: [
-      {
-        id: "carto-dark-tiles",
-        type: "raster",
-        source: "carto-dark",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-  light: {
-    version: 8,
-    sources: {
-      "carto-light": {
-        type: "raster",
-        tiles: [
-          "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-          "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-          "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-          "https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-        ],
-        tileSize: 256,
-        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-      },
-    },
-    layers: [
-      {
-        id: "carto-light-tiles",
-        type: "raster",
-        source: "carto-light",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-};
-
 type Theme = "light" | "dark";
 
 type MapViewport = {
@@ -88,6 +34,37 @@ type MapViewport = {
 
 type MapStyleOption = string | StyleSpecification;
 type MapRef = any;
+
+// 🌟 100% Free, Keyless, Zero-CORS, High-Res Vector & Retina Styles for MapLibre 🌟
+// Uses OpenFreeMap vector styles (fast, global CDN, zero 403 errors, Thai language support)
+const defaultStyles: Record<Theme, MapStyleOption> = {
+  dark: "https://tiles.openfreemap.org/styles/dark",
+  light: "https://tiles.openfreemap.org/styles/positron",
+};
+
+// OpenStreetMap Raster Fallback Specification if vector style is unreachable
+export const osmRasterFallbackStyle: StyleSpecification = {
+  version: 8,
+  sources: {
+    "osm-tiles": {
+      type: "raster",
+      tiles: [
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      ],
+      tileSize: 256,
+      attribution: "&copy; OpenStreetMap contributors",
+    },
+  },
+  layers: [
+    {
+      id: "osm-raster-layer",
+      type: "raster",
+      source: "osm-tiles",
+      minzoom: 0,
+      maxzoom: 19,
+    },
+  ],
+};
 
 type MapContextValue = {
   map: any | null;
@@ -213,6 +190,16 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       ...viewport,
     });
 
+    let hasFallbackRun = false;
+    map.on("error", (e: any) => {
+      if (!hasFallbackRun && (e?.error?.message?.includes("style") || e?.status === 403 || e?.status === 404)) {
+        hasFallbackRun = true;
+        try {
+          map.setStyle(osmRasterFallbackStyle);
+        } catch (err) {}
+      }
+    });
+
     const styleDataHandler = () => {
       clearStyleTimeout();
       styleTimeoutRef.current = setTimeout(() => setIsStyleLoaded(true), 100);
@@ -231,7 +218,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     map.on("move", moveHandler);
     setMapInstance(map);
 
-    // Ensure map container renders correct size
+    // Guaranteed responsive resize triggers
     const resizeObserver = new ResizeObserver(() => {
       map.resize();
     });
@@ -239,7 +226,12 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       resizeObserver.observe(containerRef.current);
     }
 
+    const t1 = setTimeout(() => map.resize(), 200);
+    const t2 = setTimeout(() => map.resize(), 800);
+
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
       clearStyleTimeout();
       resizeObserver.disconnect();
       map.off("load", loadHandler);
