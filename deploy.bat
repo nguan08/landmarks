@@ -15,7 +15,7 @@ git add .
 echo.
 
 echo 3. Git Commit:
-git commit -m "update chapter 1 and chapter 2 animation styles"
+git commit -m "fix: remove unused import in vite.config.ts and fix build"
 echo.
 
 echo 4. Git Push to GitHub:
@@ -24,8 +24,8 @@ echo.
 
 echo ===================================================
 echo    DEPLOY FINISHED!
-echo    - If push was successful, wait 1-2 mins for GitHub
-echo    - Then refresh https://landmarks.work with Ctrl+F5
+echo    - Check GitHub Actions: https://github.com/nguan08/landmarks/actions
+echo    - Wait 1-2 mins for green checkmark, then Ctrl+F5 on landmarks.work
 echo ===================================================
 echo.
 pause
